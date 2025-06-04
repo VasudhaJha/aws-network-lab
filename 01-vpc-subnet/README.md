@@ -1,17 +1,22 @@
 # 01-vpc-subnet
 
-This module sets up a basic VPC and a single public subnet in AWS using Terraform.
+This module sets up a basic VPC and **multiple subnets** in AWS using Terraform.
 
-## What You’ll Learn
+## You’ll Learn
 
-- How to define a custom VPC
-- How to create a subnet inside that VPC
-- How CIDR blocks work in Terraform
+- How to define a custom VPC with essential networking options
+- How to use **Terraform data sources** to fetch AWS availability zones dynamically
+- How to dynamically create subnets across Availability Zones
+- How to use `cidrsubnet()` to calculate non-overlapping CIDRs for subnets within VPC
 
-## Resources Created
+## Resources You'll Create
 
-- 1 VPC with a custom CIDR
-- 1 Subnet within the VPC
+- 1 VPC with a custom CIDR block
+- N **public-leaning** subnets in different Availability Zones within the VPC (1 per AZ, as defined by input)
+
+> Note: Subnets are created dynamically based on `var.num_subnets` and the region’s available AZs.
+> These subnets are **designed to be public**, but aren’t fully public yet.
+> We'll attach an Internet Gateway and route table in the next section to complete the public setup.
 
 ## How to Use
 
@@ -21,7 +26,7 @@ terraform plan
 terraform apply
 ```
 
-To destroy the resources:
+To destroy resources
 
 ```bash
 terraform destroy
