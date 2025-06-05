@@ -11,22 +11,27 @@ This module sets up a basic VPC and **multiple subnets** in AWS using Terraform.
 
 ## Visual Overview
 
+<details>
+<summary><strong>View Architecture Diagram</strong></summary>
+
+```text
                          +----------------------------+
                          |         AWS Region        |
-                         |    (e.g., ap-south-1)      |
+                         |      (e.g., ap-south-1)    |
                          +------------+---------------+
                                       |
                                +------+------+
                                |     VPC      |
-                               |  (Custom)    |
+                               |   (Custom)   |
                                +------+-------+
                                       |
         +-----------------------------+-----------------------------+
         |                             |                             |
 +---------------+           +---------------+             +---------------+
-|  Subnet       |           |  Subnet       |     ...     |  Subnet       |
-|   (AZ-a)      |           |   (AZ-b)      |             |   (AZ-c)      |
+|    Subnet     |           |    Subnet     |     ...     |    Subnet     |
+|    (AZ-a)     |           |    (AZ-b)     |             |    (AZ-c)     |
 +---------------+           +---------------+             +---------------+
+</details> ```
 
 ## Resources You'll Create
 

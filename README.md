@@ -16,7 +16,7 @@ Each concept is isolated into its own folder so you can build, test, and destroy
 | 07 | `07-alb-tls-termination/`       | Attach an ACM TLS certificate to ALB to enable HTTPS access                      |
 | 08 | `08-waf-protection/`            | Add AWS WAF to filter malicious traffic at the ALB layer                         |
 | 09 | `09-nlb-setup/`                 | Create a Network Load Balancer for TCP/TLS-based workloads                       |
-| 10 | `10-cloudfront-s3/` (optional)  | Serve static websites with CloudFront + S3 and add TLS termination at the edge   |
+| 10 | `10-cloudfront-s3/`      | Serve static websites with CloudFront + S3 and add TLS termination at the edge   |
 
 ---
 
