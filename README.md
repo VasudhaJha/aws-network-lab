@@ -9,8 +9,8 @@ Each concept is isolated into its own folder so you can build, test, and destroy
 |----|----------------------------------|-----------------------------------------------------------------------------------|
 | 01 | `01-vpc-subnet/`                 | Create a custom VPC and dynamically generate subnets using AZs & CIDRs           |
 | 02 | `02-public-routing/`            | Make subnets public using IGW, route tables, and test with EC2 + curl            |
-| 03 | `03-security-groups/`           | Configure security groups using best practices with ingress and egress rules     |
-| 04 | `04-nat-private-subnets/`       | Set up private subnets and NAT Gateway for outbound internet access              |
+| 03 | `03-private-routing/`           | Set up private subnets and NAT Gateway for outbound internet access              |
+| 04 | `04-security-groups/`           | Configure security groups using best practices with ingress and egress rules     |
 | 05 | `05-elb-setup/`                 | Deploy an Application Load Balancer with target groups and listeners             |
 | 06 | `06-dns-route53-basics/`        | Use Route 53 to manage domain names, records, and routing policies               |
 | 07 | `07-alb-tls-termination/`       | Attach an ACM TLS certificate to ALB to enable HTTPS access                      |
