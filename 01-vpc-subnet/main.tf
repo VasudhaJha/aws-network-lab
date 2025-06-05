@@ -26,7 +26,7 @@ data "aws_availability_zones" "available" {
 
 # ---- Local subnet configuration ----
 locals {
-  public_subnet_config = {
+  subnet_config = {
     for i in range(var.num_subnets):
     "subnet-${i}" => {
         cidr = cidrsubnet(var.vpc_cidr, 8, i)
@@ -45,8 +45,8 @@ Key arguments when defining a Subnet
 */
 
 # ---- Create subnets ----
-resource "aws_subnet" "public" {
-  for_each = local.public_subnet_config
+resource "aws_subnet" "subnets" {
+  for_each = local.subnet_config
 
   vpc_id = aws_vpc.main.id
   cidr_block = each.value.cidr

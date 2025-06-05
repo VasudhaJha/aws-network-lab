@@ -9,14 +9,32 @@ This module sets up a basic VPC and **multiple subnets** in AWS using Terraform.
 - How to dynamically create subnets across Availability Zones
 - How to use `cidrsubnet()` to calculate non-overlapping CIDRs for subnets within VPC
 
+## Visual Overview
+
+                         +----------------------------+
+                         |         AWS Region        |
+                         |    (e.g., ap-south-1)      |
+                         +------------+---------------+
+                                      |
+                               +------+------+
+                               |     VPC      |
+                               |  (Custom)    |
+                               +------+-------+
+                                      |
+        +-----------------------------+-----------------------------+
+        |                             |                             |
++---------------+           +---------------+             +---------------+
+|  Subnet       |           |  Subnet       |     ...     |  Subnet       |
+|   (AZ-a)      |           |   (AZ-b)      |             |   (AZ-c)      |
++---------------+           +---------------+             +---------------+
+
 ## Resources You'll Create
 
 - 1 VPC with a custom CIDR block
-- N **public-leaning** subnets in different Availability Zones within the VPC (1 per AZ, as defined by input)
+- N subnets in different Availability Zones within the VPC (1 per AZ, as defined by input)
 
 > Note: Subnets are created dynamically based on `var.num_subnets` and the region’s available AZs.
-> These subnets are **designed to be public**, but aren’t fully public yet.
-> We'll attach an Internet Gateway and route table in the next section to complete the public setup.
+> You will learn how to make the subnets public in next section. For now, no requests can come in or go out from these subnets.
 
 ## How to Use
 
