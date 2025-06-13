@@ -34,8 +34,6 @@ This lab creates a foundation VPC with multiple subnets distributed across avail
 - 1 VPC with a custom CIDR block
 - Multiple subnets distributed across Availability Zones (quantity controlled by num_subnets variable)
 
-> **Note**: These are private subnets by default. Internet access will be configured in the next lab.
-
 ## Example Usage
 
 Create a `terraform.tfvars` file:
