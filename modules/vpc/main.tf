@@ -68,7 +68,7 @@ locals {
     for i in range(var.num_public_subnets) :
     "public-subnet-${i}" => {
       cidr = cidrsubnet(var.vpc_cidr, 8, i + var.num_private_subnets)
-      az   = data.aws_availability_zones.available.names[0]
+      az   = data.aws_availability_zones.available.names[i]
     }
   }
 }
@@ -153,7 +153,7 @@ Creates an Elastic IP to attach to the NAT Gateway.
 This provides a static, publicly routable IPv4 address.
 */
 resource "aws_eip" "eip" {
-    domain = vpc # Indicates if this EIP is for use in VPC.
+    domain = "vpc" # Indicates if this EIP is for use in VPC.
 }
 
 /*

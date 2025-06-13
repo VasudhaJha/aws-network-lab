@@ -1,3 +1,9 @@
+variable "region" {
+  description = "AWS region to provision and manage resources in"
+  type = string
+  default = "ap-south-1"
+}
+
 variable "vpc_cidr" {
   description = "CIDR block for the VPC"
   type        = string
@@ -7,7 +13,7 @@ variable "vpc_cidr" {
 variable "vpc_name" {
   description = "Name tag for the VPC"
   type        = string
-  default     = "custom-vpc"
+  default     = "alb-demo-vpc"
 }
 
 variable "num_private_subnets" {
@@ -19,7 +25,7 @@ variable "num_private_subnets" {
 variable "num_public_subnets" {
   description = "Number of public subnets to create"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "tags" {

@@ -1,0 +1,131 @@
+✅ Micro-Project Idea: "Dual Web App Routing with ALB"
+🎯 What You’ll Build
+A simple Application Load Balancer setup where:
+
+https://alb-dns-name/blue routes to App A
+
+https://alb-dns-name/green routes to App B
+
+Each app is a basic EC2 instance running an NGINX or Python HTTP server on port 80
+
+ALB performs:
+
+Path-based routing
+
+Health checks
+
+Logging (optional: enable access logs to S3)
+
+Your Terraform module provisions:
+
+VPC with public and private subnets
+
+ALB in public subnet
+
+EC2s in private subnet behind ALB
+
+NAT gateway so EC2s can install packages
+
+🔧 Architecture Overview
+text
+Copy
+Edit
+                      Internet
+                          |
+                    [Application Load Balancer]
+                     /           |            \
+        path: /blue             path: /green   (health checks)
+           |                       |
+    Target Group A           Target Group B
+        |                       |
+   EC2 Instance A         EC2 Instance B
+ (Blue App - NGINX)     (Green App - NGINX)
+     (Private Subnet)        (Private Subnet)
+🧩 What You'll Learn
+How to configure ALB path-based routing
+
+Target groups with health checks
+
+Private EC2s behind ALB with NAT for updates
+
+Security groups (ALB inbound from 0.0.0.0/0, EC2s accept only from ALB)
+
+Terraform modules reusability (your VPC module!)
+
+(Optional) Access logs & WAF preview
+
+📁 Suggested Folder Structure
+graphql
+Copy
+Edit
+aws-network-lab/
+│
+├── modules/
+│   └── vpc/                     # Your existing VPC module
+│
+├── alb-lab/
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   └── README.md                # Document what you learn
+🛠️ Steps to Implement
+Use your VPC module to spin up a VPC with 2 public and 2 private subnets.
+
+Create two EC2 instances (App A & App B) in separate private subnets.
+
+Use a startup script to install NGINX or Python HTTP server
+
+Customize index.html to show “Blue App” and “Green App”
+
+Create an ALB in public subnets:
+
+Listener on port 80 or 443 (if you're ready to use HTTPS)
+
+Health checks: /index.html
+
+Create 2 target groups:
+
+Register EC2 A to group A
+
+Register EC2 B to group B
+
+Configure path-based routing:
+
+/blue → target group A
+
+/green → target group B
+
+Security Groups:
+
+ALB SG: allow 0.0.0.0/0 on port 80
+
+EC2 SG: allow only from ALB SG on port 80
+
+(Optional) Add:
+
+ALB access logs to S3
+
+Sticky sessions to one target group
+
+SSL certificate via ACM if HTTPS
+
+🧪 How to Test
+Deploy the infra
+
+Hit http://<alb-dns-name>/blue → Should return Blue app
+
+Hit http://<alb-dns-name>/green → Should return Green app
+
+Stop one EC2 → verify ALB detects it as unhealthy
+
+💡 Bonus Challenges (if you want to go further)
+Replace EC2s with ECS services (ALB supports dynamic ports!)
+
+Add WAF to protect the ALB
+
+Add ACM + HTTPS support
+
+Simulate blue/green deployment using weighted target groups
+
+Add Terraform modules for ALB, target groups, EC2, etc., to learn module design patterns
+

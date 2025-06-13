@@ -21,4 +21,14 @@ variable "vpc_cidr" {
 variable "num_subnets" {
   description = "Number of subnets to be created within the VPC"
   type = string
+  validation {
+    condition = var.num_subnets > 0 && var.num_subnets < 16
+    error_message = "Number of subnets must be between 1 and 16"
+  }
+}
+
+variable "subnet_newbits" {
+  description = "Number of additional bits to extend VPC CIDR for subnets"
+  type        = number
+  default     = 8
 }

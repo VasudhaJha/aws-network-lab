@@ -26,10 +26,11 @@ data "aws_availability_zones" "available" {
 
 # ---- Local subnet configuration ----
 locals {
+  actual_num_subnets = min(var.num_subnets, length(data.aws_availability_zones.available.names))
   subnet_config = {
     for i in range(var.num_subnets):
-    "subnet-${i}" => {
-        cidr = cidrsubnet(var.vpc_cidr, 8, i)
+    "subnet-${data.aws_availability_zones.available.names[i]}" => {
+        cidr = cidrsubnet(var.vpc_cidr, var.subnet_newbits, i)
         az = data.aws_availability_zones.available.names[i]
     } 
   }
@@ -51,7 +52,6 @@ resource "aws_subnet" "subnets" {
   vpc_id = aws_vpc.main.id
   cidr_block = each.value.cidr
   availability_zone = each.value.az
-  map_public_ip_on_launch = true
 
   tags = merge(var.tags, {
     Name = each.key
