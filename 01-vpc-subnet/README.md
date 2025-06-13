@@ -1,14 +1,14 @@
 # 01-vpc-subnet
 
+> **📊 Lab Info**  
+> **Difficulty:** 🟢 Beginner
+> **Estimated Time:** 15-20 minutes
+> **AWS Services:** VPC, Subnets
+> **Prerequisites:** AWS CLI configured, Terraform basics
+
 ## Overview
 
 This lab creates a foundation VPC with multiple subnets distributed across availability zones.
-
-## Prerequisites
-
-- AWS CLI configured with appropriate credentials
-- Terraform installed (version 1.0+)
-- Basic understanding of AWS VPC concepts
 
 ## Architecture
 
@@ -33,6 +33,43 @@ This lab creates a foundation VPC with multiple subnets distributed across avail
 
 - 1 VPC with a custom CIDR block
 - Multiple subnets distributed across Availability Zones (quantity controlled by num_subnets variable)
+
+## Key Concepts Explained
+
+### What is a VPC?
+
+- Virtual Private Cloud: Your own isolated network within AWS
+- Think of it as your private data center in the cloud
+- All resources (EC2, RDS, etc.) live inside VPCs
+
+### CIDR Blocks and IP Addressing
+
+- CIDR notation (e.g., `10.0.0.0/16`) defines your network's IP range
+- `/16` means 65,536 available IP addresses (10.0.0.0 to 10.0.255.255)
+- Subnets carve smaller blocks from the VPC CIDR
+
+### Availability Zones (AZs)
+
+- Physically separate data centers within a region
+- Distributing subnets across AZs provides high availability
+- If one AZ fails, resources in other AZs remain available
+
+### Subnets
+
+- Subnets divide your VPC into smaller networks
+- Each subnet exists in exactly one AZ
+- Resources are launched into specific subnets
+
+### The `cidrsubnet()` Function
+
+- `cidrsubnet("10.0.0.0/16", 8, 0)` creates `10.0.0.0/24`
+- `cidrsubnet("10.0.0.0/16", 8, 1)` creates `10.0.1.0/24`
+- Automatically calculates non-overlapping subnet ranges
+
+### DNS in VPC
+
+- `enable_dns_support`: Allows DNS resolution within the VPC
+- `enable_dns_hostnames`: EC2 instances get DNS names (needed for public access later)
 
 ## Example Usage
 
@@ -90,4 +127,5 @@ terraform destroy
 ## Next Steps
 
 - **02-public-routing**: Add internet connectivity to make subnets public
-- **03-private-routing**: Configure custom route tables
+- **03-private-subnets**: Create private subnets with NAT Gateway for secure outbound access
+- **04-hybrid-vpc**: Build complete VPC with both public and private subnets plus routing

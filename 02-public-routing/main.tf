@@ -38,10 +38,11 @@ Generates subnet CIDRs and corresponding AZs dynamically.
 Uses `cidrsubnet()` to carve blocks from the VPC CIDR.
 */
 locals {
+  actual_num_subnets = min(var.num_subnets, length(data.aws_availability_zones.available.names))
   public_subnet_config = {
-    for i in range(var.num_subnets) :
-    "public-subnet-${i}" => {
-      cidr = cidrsubnet(var.vpc_cidr, 8, i)
+    for i in range(local.actual_num_subnets) :
+    "public-subnet-${data.aws_availability_zones.available.names[i]}" => {
+      cidr = cidrsubnet(var.vpc_cidr, var.subnet_newbits, i)
       az   = data.aws_availability_zones.available.names[i]
     }
   }
@@ -195,7 +196,7 @@ Launches an EC2 instance in one of the public subnets using the Ubuntu AMI.
 
 resource "aws_instance" "web" {
   ami                         = data.aws_ami.ubuntu.id
-  instance_type               = "t2.micro"
+  instance_type               = var.instance_type
   subnet_id                   = values(aws_subnet.public)[0].id
   associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.allow_http.id]

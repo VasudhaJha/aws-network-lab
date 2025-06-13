@@ -1,34 +1,47 @@
+# --------------------------
+# VPC Configuration
+# --------------------------
+
 /*
-Key arguments when defining a VPC
-1. cidr_block -> Defines the IP range
-2. enable_dns_support -> Enables private DNS resolution within the VPC. (defaults to true)
-3. enable_dns_hostnames ->	Needed if instances should get public DNS names. (defaults to false)
-4. instance_tenancy	-> Leave as "default" unless you're using Dedicated Instances (costly)
-5. tags -> 	Helps with organization and filtering in the AWS console
+Creates a custom VPC with DNS support and DNS hostnames enabled.
+This allows EC2 instances to resolve domain names and get public DNS names when launched with public IPs.
 */
 
-# ---- VPC Block ----
 resource "aws_vpc" "main" {
-  cidr_block = var.vpc_cidr
-  enable_dns_support = true
-  enable_dns_hostnames = true
-  instance_tenancy = "default"
+  cidr_block = var.vpc_cidr # Defines the IP range
+  enable_dns_support = true # Enables private DNS resolution within the VPC. (defaults to true)
+  enable_dns_hostnames = true # Needed if instances should get public DNS names. (defaults to false)
+  instance_tenancy = "default" # Leave as "default" unless you're using Dedicated Instances (costly)
 
   tags = merge(var.tags, {
     Name = var.vpc_name
-  })
+  }) # Helps with organization and filtering in the AWS console
 }
 
-# ---- Get list of AZs ----
+# --------------------------
+# Fetch AZs Dynamically
+# --------------------------
+
+/*
+Fetches the list of available Availability Zones in the current region.
+Used to evenly distribute subnets across AZs.
+*/
 data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# ---- Local subnet configuration ----
+# --------------------------
+# Subnet Configuration
+# --------------------------
+
+/*
+Generates subnet CIDRs and corresponding AZs dynamically.
+Uses `cidrsubnet()` to carve blocks from the VPC CIDR.
+*/
 locals {
   actual_num_subnets = min(var.num_subnets, length(data.aws_availability_zones.available.names))
   subnet_config = {
-    for i in range(var.num_subnets):
+    for i in range(local.actual_num_subnets):
     "subnet-${data.aws_availability_zones.available.names[i]}" => {
         cidr = cidrsubnet(var.vpc_cidr, var.subnet_newbits, i)
         az = data.aws_availability_zones.available.names[i]
@@ -37,21 +50,14 @@ locals {
 }
 
 /*
-Key arguments when defining a Subnet
-1. vpc_id -> Tells AWS which VPC the subnet belongs to
-2. cidr_block -> Defines the IP address range for the subnet (must be a subset of VPC)
-3. availability_zone -> Spreads subnets across different AZs for high availability
-4. map_public_ip_on_launch -> Automatically assigns public IPs to instances launched here
-5. tags -> Helps identify and organize the subnets
+Creates multiple subnets in different AZs using the map above.
 */
-
-# ---- Create subnets ----
 resource "aws_subnet" "subnets" {
   for_each = local.subnet_config
 
-  vpc_id = aws_vpc.main.id
-  cidr_block = each.value.cidr
-  availability_zone = each.value.az
+  vpc_id = aws_vpc.main.id # Tells AWS which VPC the subnet belongs to
+  cidr_block = each.value.cidr # Defines the IP address range for the subnet (must be a subset of VPC)
+  availability_zone = each.value.az # Spreads subnets across different AZs for high availability
 
   tags = merge(var.tags, {
     Name = each.key
