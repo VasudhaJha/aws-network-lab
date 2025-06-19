@@ -14,7 +14,7 @@ This lab sets up private subnets across multiple Availability Zones with a NAT G
 
 ## Architecture
 
-![Private Routing](./private_routing.drawio.png)
+![Private Routing](./03-private-routing.drawio.png)
 
 ## You'll Learn
 
