@@ -1,43 +1,53 @@
-# AWS Network Lab with Terraform
+# AWS Networking Labs with Terraform
 
-This repository is a hands-on learning lab for mastering AWS networking concepts using Terraform.  
-Each concept is isolated into its own folder so you can build, test, and destroy infrastructure incrementally.
+This repository is a **hands-on, project-based learning path** to master core AWS networking concepts using Terraform.
 
-## Learning Roadmap
-
-| #  | Module Folder                     | What You'll Learn                                                                 |
-|----|----------------------------------|-----------------------------------------------------------------------------------|
-| 01 | `01-vpc-subnet/`                 | Create a custom VPC and dynamically generate subnets using AZs & CIDRs           |
-| 02 | `02-public-routing/`            | Make subnets public using IGW, route tables, and test with EC2 + curl            |
-| 03 | `03-private-routing/`           | Set up private subnets and NAT Gateway for outbound internet access              |
-| 04 | `04-security-groups/`           | Configure security groups using best practices with ingress and egress rules     |
-| 05 | `05-elb-setup/`                 | Deploy an Application Load Balancer with target groups and listeners             |
-| 06 | `06-dns-route53-basics/`        | Use Route 53 to manage domain names, records, and routing policies               |
-| 07 | `07-alb-tls-termination/`       | Attach an ACM TLS certificate to ALB to enable HTTPS access                      |
-| 08 | `08-waf-protection/`            | Add AWS WAF to filter malicious traffic at the ALB layer                         |
-| 09 | `09-nlb-setup/`                 | Create a Network Load Balancer for TCP/TLS-based workloads                       |
-| 10 | `10-cloudfront-s3/`      | Serve static websites with CloudFront + S3 and add TLS termination at the edge   |
+Each lab focuses on a specific building block, allowing you to incrementally build up a fully functional, production-grade AWS network architecture.
 
 ---
 
-## Folder Structure
+## Learning Roadmap
 
-Each folder is numbered in order of complexity. You can run each folder independently using `terraform init`, `plan`, and `apply`.
+| #  | Module Folder               | What You'll Build & Learn |
+|----|------------------------------|----------------------------|
+| 01 | `01-vpc-subnet/`             | Create a custom VPC and dynamically provision subnets across AZs using CIDR calculations |
+| 02 | `02-public-routing/`         | Make subnets publicly accessible using Internet Gateway (IGW), route tables, and verify with EC2 connectivity |
+| 03 | `03-hybrid-routing/`         | Build hybrid VPC architecture: private subnets, NAT Gateway for outbound access, and secure Bastion host for SSH access |
+| 04 | `04-application-load-balancing/` | Deploy an Application Load Balancer (ALB), configure target groups, listeners, and distribute traffic to EC2 instances |
+| 05 | `05-route53-dns-integration/` | Integrate Route 53 DNS with ALB, manage hosted zones, create DNS records, and route traffic via custom domains |
+| 06 | `06-alb-tls-termination/`    | Attach ACM-managed TLS certificates to ALB to enable HTTPS access |
+| 07 | `07-waf-protection/`         | Add AWS WAF to protect applications from malicious traffic and common attack patterns |
+| 08 | `08-network-load-balancer/`  | Build a Network Load Balancer (NLB) for TCP/TLS-based workloads with cross-zone balancing |
+| 09 | `09-cloudfront-s3/`          | Deploy a static website using CloudFront + S3, with TLS termination at the edge for global content delivery |
 
-## How to Use
+---
 
-Inside each subfolder:
+## Who is this for?
 
-```bash
-terraform init
-terraform plan
-terraform apply 
-```
+- AWS learners who want real, hands-on experience beyond tutorials
+- DevOps, Cloud Engineers, and SREs preparing for interviews or certifications
+- Anyone who wants to deeply understand AWS networking components in isolation
 
-To tear everything down:
+---
 
-```bash
-terraform destroy
-```
+## Key Concepts Covered
 
-Each module is designed to be self-contained and safe to destroy.
+- VPC, Subnets, CIDR, Availability Zones
+- Route Tables, Internet Gateways, NAT Gateway
+- Bastion Hosts & Private Subnet Access
+- Application Load Balancers (ALB) & Target Groups
+- DNS with Route 53
+- TLS Certificates with ACM
+- AWS WAF & Web Application Security
+- Network Load Balancers (NLB)
+- CloudFront CDN with S3 Origin
+
+---
+
+## ⚠️ Cost Reminder
+
+Some resources (NAT Gateway, ALB, WAF, CloudFront) may incur costs if left running. Always run `terraform destroy` after completing a lab.
+
+---
+
+👉 **More labs will be added as I continue building the full AWS Networking reference project.**
