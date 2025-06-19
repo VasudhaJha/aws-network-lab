@@ -1,3 +1,17 @@
+# ------------------------------------
+# VPC Module Invocation
+# ------------------------------------
+
+/*
+Invokes the VPC module to provision:
+- A custom VPC
+- Public and private subnets
+- Internet Gateway and NAT Gateway
+- Route tables
+
+The outputs from this module (like subnet IDs and VPC ID) are used in the rest of the infrastructure.
+*/
+
 module "vpc" {
   source = "../modules/vpc"
   vpc_cidr = var.vpc_cidr
@@ -6,6 +20,14 @@ module "vpc" {
   num_private_subnets = var.num_private_subnets
 }
 
+# ------------------------------------
+# ALB Configuration
+# ------------------------------------
+
+/*
+Creates an external Application Load Balancer.
+It listens on port 80 (HTTP) and is associated with public subnets to be internet-accessible.
+*/
 resource "aws_lb" "alb" {
   name               = "${var.tags["project"]}-alb"
   internal           = false
@@ -15,6 +37,15 @@ resource "aws_lb" "alb" {
   tags = var.tags
 }
 
+# ------------------------------------
+# ALB Security Group
+# ------------------------------------
+
+/*
+Creates a security group that:
+- Allows inbound HTTP (port 80) from anywhere (0.0.0.0/0)
+- Allows all outbound traffic
+*/
 resource "aws_security_group" "alb_sg" {
   name        = "allow_http"
   description = "Allow http inbound traffic into alb and all outbound traffic"
@@ -38,6 +69,17 @@ resource "aws_vpc_security_group_egress_rule" "allow_all_traffic" {
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1" # semantically equivalent to all ports
 }
+
+# ------------------------------------
+# Target Groups (Green and Blue)
+# ------------------------------------
+
+/*
+Creates target groups for each app version (green and blue).
+Each target group:
+- Uses HTTP on port 80
+- Performs health checks on its respective path (/green or /blue)
+*/
 
 resource "aws_lb_target_group" "green" {
   name        = "green-tg"
@@ -81,6 +123,14 @@ resource "aws_lb_target_group" "blue" {
   })
 }
 
+# ------------------------------------
+# Target Group Attachments
+# ------------------------------------
+
+/*
+Registers EC2 instances as targets in the respective target groups.
+Each EC2 instance listens on port 80.
+*/
 
 resource "aws_lb_target_group_attachment" "green" {
   target_group_arn = aws_lb_target_group.green.arn
@@ -93,6 +143,15 @@ resource "aws_lb_target_group_attachment" "blue" {
   target_id = aws_instance.blue.id
   port = 80
 }
+
+# ------------------------------------
+# ALB Listener & Rules
+# ------------------------------------
+
+/*
+Creates an HTTP listener on port 80 for the ALB.
+Requests not matching any rule return a 400 fixed response.
+*/
 
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.alb.arn
@@ -110,6 +169,12 @@ resource "aws_lb_listener" "http" {
   }
 }
 
+/*
+Listener rules that forward based on path patterns.
+- Requests to `/green*` go to green target group.
+- Requests to `/blue*` go to blue target group.
+*/
+
 resource "aws_lb_listener_rule" "green" {
   listener_arn = aws_lb_listener.http.arn
   priority     = 1
@@ -121,7 +186,7 @@ resource "aws_lb_listener_rule" "green" {
 
   condition {
     path_pattern {
-      values = ["/green"]
+      values = ["/green", "/green*"]
     }
   }
 }
@@ -137,13 +202,22 @@ resource "aws_lb_listener_rule" "blue" {
 
   condition {
     path_pattern {
-      values = ["/blue"]
+      values = ["/blue", "/blue*"]
     }
   }
 }
 
 
-//targets
+# ------------------------------------
+# EC2 Instance Security Group
+# ------------------------------------
+
+/*
+Security group for EC2 instances that:
+- Allows inbound HTTP from the ALB SG
+- Allows all outbound traffic
+*/
+
 resource "aws_security_group" "web_sg" {
   name = "allow_alb_inbound"
   description = "Allow inbound traffic from ALB security group"
@@ -168,6 +242,14 @@ resource "aws_vpc_security_group_egress_rule" "allow_out" {
   ip_protocol = "-1" # allow all protocols, no restrictions
 }
 
+# ------------------------------------
+# EC2 Instances (Blue and Green)
+# ------------------------------------
+
+/*
+Fetches the latest Ubuntu 20.04 AMI (HVM, SSD-backed).
+*/
+
 data "aws_ami" "ubuntu" {
   most_recent = true
 
@@ -184,12 +266,19 @@ data "aws_ami" "ubuntu" {
   owners = ["099720109477"] # Canonical (Ubuntu)
 }
 
+/*
+Creates the Blue app EC2 instance:
+- Hosted in private_subnet_0
+- Serves content from /var/www/html/blue
+- Defines NGINX location block for /blue
+*/
 resource "aws_instance" "blue" {
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = "t2.micro"
-  subnet_id                   = module.vpc.public_subnet_ids[0]
+  subnet_id                   = module.vpc.private_subnet_ids[0]
   vpc_security_group_ids      = [aws_security_group.web_sg.id]
-  associate_public_ip_address = true
+  key_name                    = "bastion-key"
+  
   user_data = <<-EOF
               #!/bin/bash
               apt update -y
@@ -200,9 +289,9 @@ resource "aws_instance" "blue" {
 
               echo 'server {
                   listen 80;
-
+                  root /var/www/html;
                   location /blue {
-                      root /var/www/html;
+                      try_files $uri $uri/ $uri/index.html =404;
                   }
               }' > /etc/nginx/sites-available/default
 
@@ -214,12 +303,19 @@ resource "aws_instance" "blue" {
   })
 }
 
+/*
+Creates the Green app EC2 instance:
+- Hosted in private_subnet_1
+- Serves content from /var/www/html/green
+- Defines NGINX location block for /green
+*/
 resource "aws_instance" "green" {
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = "t2.micro"
-  subnet_id                   = module.vpc.public_subnet_ids[1]
+  subnet_id                   = module.vpc.private_subnet_ids[0]
   vpc_security_group_ids      = [aws_security_group.web_sg.id]
-  associate_public_ip_address = true
+  key_name                    = "bastion-key"
+  
   user_data = <<-EOF
               #!/bin/bash
               apt update -y
@@ -230,9 +326,9 @@ resource "aws_instance" "green" {
 
               echo 'server {
                   listen 80;
-
+                  root /var/www/html;
                   location /green {
-                      root /var/www/html;
+                      try_files $uri $uri/ $uri/index.html =404;
                   }
               }' > /etc/nginx/sites-available/default
 

@@ -12,7 +12,7 @@ Each lab focuses on a specific building block, allowing you to incrementally bui
 |----|------------------------------|----------------------------|
 | 01 | `01-vpc-subnet/`             | Create a custom VPC and dynamically provision subnets across AZs using CIDR calculations |
 | 02 | `02-public-routing/`         | Make subnets publicly accessible using Internet Gateway (IGW), route tables, and verify with EC2 connectivity |
-| 03 | `03-hybrid-routing/`         | Build hybrid VPC architecture: private subnets, NAT Gateway for outbound access, and secure Bastion host for SSH access |
+| 03 | `03-hybrid-networking/`         | Build hybrid VPC architecture: private subnets, NAT Gateway for outbound access, and secure Bastion host for SSH access |
 | 04 | `04-application-load-balancing/` | Deploy an Application Load Balancer (ALB), configure target groups, listeners, and distribute traffic to EC2 instances |
 | 05 | `05-route53-dns-integration/` | Integrate Route 53 DNS with ALB, manage hosted zones, create DNS records, and route traffic via custom domains |
 | 06 | `06-alb-tls-termination/`    | Attach ACM-managed TLS certificates to ALB to enable HTTPS access |
