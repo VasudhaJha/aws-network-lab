@@ -1,6 +1,8 @@
 region = "ap-south-1"
 tags = {
-  "project" = "aws-network-lab"
+  Environment = "lab"
+  project     = "public-routing"  # Required for resource naming
+  Lab         = "02-public-routing"
 }
 
 vpc_cidr                = "10.0.0.0/16"
