@@ -1,20 +1,25 @@
-# 03-private-routing
-
-Private subnets with NAT Gateway for secure outbound internet access
+# 03-hybrid-networking
 
 > **📊 Lab Info**
 > **Difficulty: 🟡 Intermediate**
 > **Estimated Time: 25-30 minutes**
-> **AWS Services: VPC, Private Subnets, NAT Gateway, Elastic IP, Route Tables**
+> **AWS Services: VPC, Private Subnets, NAT Gateway, Elastic IP, Route Tables, EC2**
 > **Prerequisites: Understanding of Labs 1-2, VPC routing concepts**
 
 ## Overview
 
-This lab sets up private subnets across multiple Availability Zones with a NAT Gateway, allowing instances in private subnets to access the internet for outbound tasks like installing packages, fetching updates, or calling external APIs—all without being exposed to incoming internet traffic.
+This lab creates a full hybrid VPC architecture with both a public and private subnets.
+Public subnet hosts NAT Gateway and Bastion Host; private subnets are isolated from inbound internet traffic, but have secure outbound internet access via NAT Gateway for tasks like installing packages, fetching updates, or calling external APIs—all without being exposed to incoming internet traffic.
 
 ## Architecture
 
-![Private Routing](./03-private-routing.drawio.png)
+![Hybrid Networking ](./03-hybrid-networking.drawio.png)
+
+- Public Subnets: NAT Gateway, Bastion Host
+- Private Subnets: EC2 Instance (no direct internet exposure)
+- Public Route Table: Routes 0.0.0.0/0 → IGW
+- Private Route Table: Routes 0.0.0.0/0 → NAT Gateway
+- Fully isolated private networking with controlled outbound access
 
 ## You'll Learn
 
@@ -30,7 +35,7 @@ This lab sets up private subnets across multiple Availability Zones with a NAT G
 - 1 VPC with DNS support enabled
 - 1 Internet Gateway (required for NAT Gateway functionality)
 - N Private Subnets distributed across multiple AZs
-- 1 Public Subnet (hosts the NAT Gateway)
+- 1 Public Subnet (hosts the NAT Gateway and Bastion Host)
 - 1 Elastic IP (static public IP for NAT Gateway)
 - 1 NAT Gateway (managed service for outbound internet access)
 - 2 Route Tables (public and private routing)
@@ -62,6 +67,14 @@ This lab sets up private subnets across multiple Availability Zones with a NAT G
 - Public route table: Routes internet traffic via IGW
 - Private route table: Routes internet traffic via NAT Gateway
 - Multiple private subnets can share one route table
+
+## Bastion Host
+
+- A small EC2 instance placed in a public subnet.
+- Acts as a secure entry point to access private instances inside the VPC.
+- Only the bastion host has a public IP; private instances remain inaccessible from the internet.
+- You SSH into the bastion first, and from there, SSH into private instances.
+- This approach minimizes exposure and follows security best practices for managing access.
 
 ## Example Configuration
 
@@ -122,8 +135,9 @@ vpc_id = "vpc-0234efdebedc7663c"
 
 2. **Test NAT Gateway:**
 
+  Use curl to confirm outbound internet traffic is routed via the NAT Gateway
+  
   ```bash
-  cat status.txt  # Should show "NAT Gateway working!"
   curl http://checkip.amazonaws.com  # Shows NAT Gateway public IP
   ```
 

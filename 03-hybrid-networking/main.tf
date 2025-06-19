@@ -357,12 +357,6 @@ resource "aws_instance" "private" {
   vpc_security_group_ids = [aws_security_group.private_instance.id]
   subnet_id             = aws_subnet.private["private-subnet-0"].id
 
-  user_data = <<-EOF
-              #!/bin/bash
-              yum update -y
-              echo "Private instance ready - NAT Gateway working!" > /home/ec2-user/status.txt
-              EOF
-
   tags = merge(var.tags, {
     Name = "${var.tags["project"]}-private-instance"
     Type = "Private"

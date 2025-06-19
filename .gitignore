@@ -3,3 +3,5 @@ terraform.tfstate
 terraform.tfstate.backup
 bastion-key
 bastion-key.pub
+lab-key
+labe-key.pub
