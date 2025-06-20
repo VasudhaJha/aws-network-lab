@@ -13,11 +13,12 @@ The outputs from this module (like subnet IDs and VPC ID) are used in the rest o
 */
 
 module "vpc" {
-  source = "../modules/vpc"
-  vpc_cidr = var.vpc_cidr
-  vpc_name = var.vpc_name
-  num_public_subnets = var.num_public_subnets
-  num_private_subnets = var.num_private_subnets
+    source = "../modules/vpc"
+    vpc_cidr = var.vpc_cidr
+    vpc_name = var.vpc_name
+    num_private_subnets = var.num_private_subnets
+    num_public_subnets = var.num_public_subnets
+    tags = var.tags
 }
 
 # ------------------------------------
@@ -28,13 +29,13 @@ module "vpc" {
 Creates an external Application Load Balancer.
 It listens on port 80 (HTTP) and is associated with public subnets to be internet-accessible.
 */
+
 resource "aws_lb" "alb" {
-  name               = "${var.tags["project"]}-alb"
-  internal           = false
+  name = "${var.tags["project"]}-alb"
+  internal = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = module.vpc.public_subnet_ids
-  tags = var.tags
+  subnets = module.vpc.public_subnet_ids # AWS requires you to specify at least two subnets in two distinct AZs for high availability.
+  security_groups = [aws_security_group.alb_sg.id]
 }
 
 # ------------------------------------
@@ -46,10 +47,11 @@ Creates a security group that:
 - Allows inbound HTTP (port 80) from anywhere (0.0.0.0/0)
 - Allows all outbound traffic
 */
+
 resource "aws_security_group" "alb_sg" {
-  name        = "allow_http"
-  description = "Allow http inbound traffic into alb and all outbound traffic"
-  vpc_id      = module.vpc.vpc_id
+  name = "allow_http"
+  description = "allow http requests to reach the ALB on port 80"
+  vpc_id = module.vpc.vpc_id
 
   tags = merge(var.tags, {
     Name = "alb_allow_http"
@@ -58,16 +60,16 @@ resource "aws_security_group" "alb_sg" {
 
 resource "aws_vpc_security_group_ingress_rule" "allow_http" {
   security_group_id = aws_security_group.alb_sg.id
-  cidr_ipv4         = "0.0.0.0/0"
-  from_port         = 80
-  ip_protocol       = "tcp"
-  to_port           = 80
+  cidr_ipv4 = "0.0.0.0/0"
+  from_port = 80
+  to_port = 80
+  ip_protocol = "tcp"
 }
 
-resource "aws_vpc_security_group_egress_rule" "allow_all_traffic" {
+resource "aws_vpc_security_group_egress_rule" "allow_all_outbound" {
   security_group_id = aws_security_group.alb_sg.id
-  cidr_ipv4         = "0.0.0.0/0"
-  ip_protocol       = "-1" # semantically equivalent to all protocols
+  cidr_ipv4 = "0.0.0.0/0"
+  ip_protocol = "-1"
 }
 
 # ------------------------------------
@@ -82,19 +84,19 @@ Each target group:
 */
 
 resource "aws_lb_target_group" "green" {
-  name        = "green-tg"
-  port        = 80
-  protocol    = "HTTP"
-  vpc_id      = module.vpc.vpc_id
+  name = "green-tg"
+  port = 80
+  protocol = "HTTP"
+  vpc_id = module.vpc.vpc_id
   target_type = "instance"
 
   health_check {
-    path                = "/green" # The HTTP path that the ALB uses to check if the target is healthy.
-    matcher             = "200-399" # The expected status code range that is considered "healthy."
-    interval            = 30 # How often (in seconds) the ALB performs health checks on the target.
-    timeout             = 5 # How long (in seconds) the ALB waits for a response from the target.
-    healthy_threshold   = 2 # The number of consecutive successful checks required to consider a target "healthy".
-    unhealthy_threshold = 2 # The number of consecutive failed checks required to consider a target "unhealthy".
+    path = var.green_app_path
+    matcher = "200-399"
+    interval = var.health_check_interval
+    timeout = var.health_check_timeout
+    healthy_threshold = var.healthy_threshold
+    unhealthy_threshold = var.unhealthy_threshold
   }
 
   tags = merge(var.tags, {
@@ -104,18 +106,18 @@ resource "aws_lb_target_group" "green" {
 
 resource "aws_lb_target_group" "blue" {
   name = "blue-tg"
-  port = 80
+  port = 80 # When I forward traffic to this target group, send it to targets on port X.
   protocol = "HTTP"
   vpc_id = module.vpc.vpc_id
   target_type = "instance"
 
   health_check {
-    path = "/blue"
+    path = var.blue_app_path
     matcher = "200-399"
-    interval = 30
-    timeout = 5
-    healthy_threshold = 2
-    unhealthy_threshold = 2
+    interval = var.health_check_interval
+    timeout = var.health_check_timeout
+    healthy_threshold = var.healthy_threshold
+    unhealthy_threshold = var.unhealthy_threshold
   }
 
   tags = merge(var.tags, {
@@ -138,6 +140,7 @@ resource "aws_lb_target_group_attachment" "green" {
   port = 80
 }
 
+
 resource "aws_lb_target_group_attachment" "blue" {
   target_group_arn = aws_lb_target_group.blue.arn
   target_id = aws_instance.blue.id
@@ -155,8 +158,8 @@ Requests not matching any rule return a 400 fixed response.
 
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.alb.arn
-  port              = 80
-  protocol          = "HTTP"
+  port = 80
+  protocol = "HTTP"
 
   default_action {
     type = "fixed-response"
@@ -169,44 +172,37 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-/*
-Listener rules that forward based on path patterns.
-- Requests to `/green*` go to green target group.
-- Requests to `/blue*` go to blue target group.
-*/
-
 resource "aws_lb_listener_rule" "green" {
   listener_arn = aws_lb_listener.http.arn
-  priority     = 1
+  priority = 1
 
   action {
-    type             = "forward"
+    type = "forward"
     target_group_arn = aws_lb_target_group.green.arn
   }
 
   condition {
     path_pattern {
-      values = ["/green", "/green*"]
+      values = [var.green_app_path, "${var.green_app_path}/"]
     }
   }
 }
 
 resource "aws_lb_listener_rule" "blue" {
   listener_arn = aws_lb_listener.http.arn
-  priority     = 2
+  priority = 2
 
   action {
-    type             = "forward"
+    type = "forward"
     target_group_arn = aws_lb_target_group.blue.arn
   }
 
   condition {
     path_pattern {
-      values = ["/blue", "/blue*"]
+      values = [var.blue_app_path, "${var.blue_app_path}/"]
     }
   }
 }
-
 
 # ------------------------------------
 # EC2 Instance Security Group
@@ -220,12 +216,11 @@ Security group for EC2 instances that:
 
 resource "aws_security_group" "web_sg" {
   name = "allow_alb_inbound"
-  description = "Allow inbound traffic from ALB security group"
+  description = "allow inbound traffic from alb sg"
   vpc_id = module.vpc.vpc_id
-
   tags = merge(var.tags, {
     Name = "allow_alb_inbound"
-  })
+    })
 }
 
 resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound" {
@@ -266,18 +261,24 @@ data "aws_ami" "ubuntu" {
   owners = ["099720109477"] # Canonical (Ubuntu)
 }
 
+resource "aws_key_pair" "bastion" {
+  key_name   = var.key_name
+  public_key = file("${path.module}/${var.key_name}.pub")
+}
+
 /*
 Creates the Blue app EC2 instance:
 - Hosted in private_subnet_0
 - Serves content from /var/www/html/blue
 - Defines NGINX location block for /blue
 */
+
 resource "aws_instance" "blue" {
   ami                         = data.aws_ami.ubuntu.id
-  instance_type               = "t2.micro"
+  instance_type               = var.instance_type
   subnet_id                   = module.vpc.private_subnet_ids[0]
   vpc_security_group_ids      = [aws_security_group.web_sg.id]
-  key_name                    = "bastion-key"
+  key_name                    = var.key_name
   
   user_data = <<-EOF
               #!/bin/bash
@@ -311,10 +312,10 @@ Creates the Green app EC2 instance:
 */
 resource "aws_instance" "green" {
   ami                         = data.aws_ami.ubuntu.id
-  instance_type               = "t2.micro"
-  subnet_id                   = module.vpc.private_subnet_ids[0]
+  instance_type               = var.instance_type
+  subnet_id                   = module.vpc.private_subnet_ids[1]
   vpc_security_group_ids      = [aws_security_group.web_sg.id]
-  key_name                    = "bastion-key"
+  key_name                    = var.key_name
   
   user_data = <<-EOF
               #!/bin/bash
@@ -338,3 +339,66 @@ resource "aws_instance" "green" {
     Name = "green-server"
   })
 }
+
+# ------------------------------------
+# Route53 Configuration
+# ------------------------------------
+
+/*
+Looks up the existing public hosted zone for your domain.
+Since I directly registered the domain directly with Route 53, AWS automatically created this hosted zone.
+This data source allows Terraform to reference the hosted zone dynamically, without hardcoding the zone ID.
+*/
+data "aws_route53_zone" "my_zone" {
+    name = var.domain_name
+    private_zone = false
+}
+
+/*
+Creates an Alias A record for the root domain (apex domain).
+- This maps aws-network-lab.com directly to the ALB.
+- Uses Alias (instead of CNAME) because:
+  - Alias supports apex domains
+  - Alias is AWS-native and integrates directly with AWS-managed resources like ALB
+  - Faster DNS resolution with no extra lookup
+- Alias requires:
+  - ALB DNS name
+  - ALB zone ID (provided by aws_lb resource)
+*/
+
+resource "aws_route53_record" "root_alias" {
+  zone_id = data.aws_route53_zone.my_zone.id
+  name = ""
+  type = "A"
+
+  alias {
+    name = aws_lb.alb.dns_name
+    zone_id = aws_lb.alb.zone_id
+    evaluate_target_health = true
+  }
+}
+
+/*
+Creates an Alias A record for www subdomain - CONDITIONALLY CREATED
+- Only created when var.create_www_record is true
+- Technically this could be a CNAME (since it's a subdomain),
+  but Alias A is better for AWS-native resources because:
+  - Faster resolution (no additional lookup)
+  - Fully integrated with ALB
+- Allows users to access www.aws-network-lab.com (optional, but common)
+*/
+resource "aws_route53_record" "www_alias" {
+  count = var.create_www_record ? 1 : 0
+  zone_id = data.aws_route53_zone.my_zone.id
+  name = "www"
+  type = "A"
+
+  alias {
+    name = aws_lb.alb.dns_name
+    zone_id = aws_lb.alb.zone_id
+    evaluate_target_health = true
+  }
+}
+
+
+
